@@ -1,8 +1,10 @@
 package main
 
 import (
-	"fmt"
+	"html/template"
+	"log"
 	"net/http"
+	"path/filepath"
 	"sync"
 )
 
@@ -22,9 +24,24 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func (cfg *apiConfig) metricsHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	templatePath := filepath.Join("templates", "admin.html")
+	tmpl, err := template.ParseFiles(templatePath)
+	if err != nil {
+		log.Printf("Error parsing template: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
 	cfg.mu.Lock()
+	visits := cfg.fileserverHits
 	defer cfg.mu.Unlock()
-	fmt.Fprintf(w, "Hits: %d", cfg.fileserverHits)
+	err = tmpl.Execute(w, struct{ Visits int }{Visits: visits})
+	if err != nil {
+		log.Printf("Error executing template: %v", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	// fmt.Fprintf(w, "Hits: %d", cfg.fileserverHits)
 }
 
 func (cfg *apiConfig) resetHandler(w http.ResponseWriter, r *http.Request) {

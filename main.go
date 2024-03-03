@@ -9,7 +9,9 @@ import (
 
 func main() {
 	r := chi.NewRouter() // Chi router
-	cfg := &apiConfig{}  // apiconfig
+	apiRouter := chi.NewRouter()
+	admin := chi.NewRouter()
+	cfg := &apiConfig{} // apiconfig
 	const port = "8080"
 
 	fileServer := http.FileServer(http.Dir(".")) // project root
@@ -18,15 +20,18 @@ func main() {
 	r.Handle("/app/*", wrappedFileServer)
 	r.Handle("/app", wrappedFileServer)
 
-	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	apiRouter.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
 
-	// r.Handle("/files", wrappedFileServer) // <- not sure why files is included
-	r.Get("/metrics", cfg.metricsHandler) // only GET
-	r.HandleFunc("/reset", cfg.resetHandler)
+	admin.Get("/metrics", cfg.metricsHandler) // only GET
+	apiRouter.HandleFunc("/reset", cfg.resetHandler)
+
+	// mount before server config
+	r.Mount("/api", apiRouter)
+	r.Mount("/admin", admin)
 
 	corsHandler := middlewareCors(r)
 	server := &http.Server{
