@@ -28,6 +28,7 @@ func main() {
 
 	admin.Get("/metrics", cfg.metricsHandler) // only GET
 	apiRouter.HandleFunc("/reset", cfg.resetHandler)
+	apiRouter.Post("/validate_chirp", cfg.handlerChirpsValidate)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)
