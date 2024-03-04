@@ -4,14 +4,57 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 )
+
+func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
+	var newChirp Chirp
+	if err := json.NewDecoder(r.Body).Decode(&newChirp); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	createdChirp, err := cfg.database.CreateChirp(newChirp.Body)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not create chirp")
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, createdChirp) // http.StatusCreated = 201
+}
+
+func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.database.GetChirps()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Could not retrieve chirps")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, chirps)
+}
+
+func cleanChirpContent(chirp string) string {
+	profaneWords := map[string]string{
+		"kerfuffle": "****",
+		"sharbert":  "****",
+		"fornax":    "****",
+	}
+	words := strings.Fields(chirp)
+	for i, word := range words {
+		if replacement, ok := profaneWords[strings.ToLower(word)]; ok {
+			words[i] = replacement
+		}
+	}
+	return strings.Join(words, " ")
+}
 
 func (cfg *apiConfig) handlerChirpsValidate(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
 		Body string `json:"body"`
 	}
 	type returnVals struct {
-		Valid bool `json:"valid"`
+		ID   int    `json:"id,omitempty"`
+		Body string `json:"cleaned_body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -28,8 +71,17 @@ func (cfg *apiConfig) handlerChirpsValidate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	cleanedContent := cleanChirpContent(params.Body)
+
+	chirp, err := cfg.database.CreateChirp(cleanedContent)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to save chirp")
+		return
+	}
+
 	respondWithJSON(w, http.StatusOK, returnVals{
-		Valid: true,
+		ID:   chirp.ID,
+		Body: cleanedContent,
 	})
 }
 

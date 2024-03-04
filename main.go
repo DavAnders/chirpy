@@ -3,15 +3,31 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 )
 
 func main() {
+	_, err := os.ReadFile("database.json")
+	if err == nil {
+		os.Remove("database.json")
+	}
 	r := chi.NewRouter() // Chi router
 	apiRouter := chi.NewRouter()
 	admin := chi.NewRouter()
-	cfg := &apiConfig{} // apiconfig
+
+	dbPath := "database.json"
+	log.Println("Initializing database...")
+	newDB, err := NewDB(dbPath)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+	log.Println("Database initialized.")
+
+	cfg := &apiConfig{
+		database: newDB,
+	} // apiconfig
 	const port = "8080"
 
 	fileServer := http.FileServer(http.Dir(".")) // project root
@@ -29,6 +45,8 @@ func main() {
 	admin.Get("/metrics", cfg.metricsHandler) // only GET
 	apiRouter.HandleFunc("/reset", cfg.resetHandler)
 	apiRouter.Post("/validate_chirp", cfg.handlerChirpsValidate)
+	apiRouter.Post("/chirps", cfg.handlerCreateChirp)
+	apiRouter.Get("/chirps", cfg.handlerGetChirps)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)
