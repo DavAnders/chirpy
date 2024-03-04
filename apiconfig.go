@@ -12,6 +12,7 @@ type apiConfig struct {
 	fileserverHits int
 	mu             sync.Mutex
 	database       *DB
+	jwtSecret      string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {

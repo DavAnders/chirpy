@@ -6,9 +6,22 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	// env loading
+	errEnv := godotenv.Load()
+	if errEnv != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatalf("JWT_SECRET is not set in .env file")
+	}
+
 	_, err := os.ReadFile("database.json")
 	if err == nil {
 		os.Remove("database.json")
@@ -26,7 +39,8 @@ func main() {
 	log.Println("Database initialized.")
 
 	cfg := &apiConfig{
-		database: newDB,
+		database:  newDB,
+		jwtSecret: jwtSecret,
 	} // apiconfig
 	const port = "8080"
 
@@ -50,6 +64,7 @@ func main() {
 	apiRouter.Get("/chirps/{chirpID}", cfg.handlerGetChirpsByID)
 	apiRouter.Post("/users", cfg.handlerCreateUser)
 	apiRouter.Post("/login", cfg.handlerLogin)
+	apiRouter.Put("/users", cfg.handleUpdateUsers)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)

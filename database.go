@@ -160,3 +160,25 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 	file := os.WriteFile(db.Path, bytes, 0644) // filemode = binary perms
 	return file
 }
+
+func (db *DB) UpdateUser(id int, email, hashedPassword string) error {
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	// Check if the user exists
+	user, exists := dbStruct.Users[id]
+	if !exists {
+		return fmt.Errorf("user not found")
+	}
+
+	// Update the user's details
+	user.Email = email
+	if hashedPassword != "" {
+		user.Password = hashedPassword
+	}
+	dbStruct.Users[id] = user
+
+	return db.writeDB(dbStruct)
+}
