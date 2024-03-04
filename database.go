@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sync"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Chirp struct {
@@ -36,15 +38,26 @@ func NewDB(path string) (*DB, error) {
 }
 
 // Create new user in DB
-func (db *DB) CreateUser(email string) (User, error) {
+func (db *DB) CreateUser(email, password string) (User, error) {
 
 	dbStruct, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
 
+	for _, user := range dbStruct.Users {
+		if user.Email == email {
+			return User{}, fmt.Errorf("email already in use")
+		}
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return User{}, err
+	}
+
 	newID := len(dbStruct.Users) + 1 // might need to change this implementation
-	newUser := User{ID: newID, Email: email}
+	newUser := User{ID: newID, Email: email, Password: string(hashedPassword)}
 	dbStruct.Users[newID] = newUser
 
 	if err := db.writeDB(dbStruct); err != nil {
