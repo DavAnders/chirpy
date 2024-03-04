@@ -47,6 +47,8 @@ func main() {
 	apiRouter.Post("/validate_chirp", cfg.handlerChirpsValidate)
 	apiRouter.Post("/chirps", cfg.handlerCreateChirp)
 	apiRouter.Get("/chirps", cfg.handlerGetChirps)
+	apiRouter.Get("/chirps/{chirpID}", cfg.handlerGetChirpsByID)
+	apiRouter.Post("/users", cfg.handlerCreateUser)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)
