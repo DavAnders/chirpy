@@ -13,6 +13,7 @@ type apiConfig struct {
 	mu             sync.Mutex
 	database       *DB
 	jwtSecret      string
+	polkaAPIKey    string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {

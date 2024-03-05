@@ -16,6 +16,10 @@ func main() {
 	if errEnv != nil {
 		log.Fatalf("Error loading .env file")
 	}
+	polkaAPIKey := os.Getenv("POLKA_API_KEY")
+	if polkaAPIKey == "" {
+		log.Fatalf("POLKA_API_KEY is not set in .env file")
+	}
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	if jwtSecret == "" {
@@ -39,8 +43,9 @@ func main() {
 	log.Println("Database initialized.")
 
 	cfg := &apiConfig{
-		database:  newDB,
-		jwtSecret: jwtSecret,
+		database:    newDB,
+		jwtSecret:   jwtSecret,
+		polkaAPIKey: polkaAPIKey,
 	} // apiconfig
 	const port = "8080"
 

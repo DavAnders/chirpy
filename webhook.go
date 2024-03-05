@@ -24,6 +24,14 @@ func (db *DB) UpgradeUserToChirpyRed(userID int) error {
 }
 
 func (cfg *apiConfig) handlePolkaWebhooks(w http.ResponseWriter, r *http.Request) {
+	apiKeyHeader := r.Header.Get("Authorization")
+	expectedAuthHeader := "ApiKey " + cfg.polkaAPIKey
+
+	if apiKeyHeader != expectedAuthHeader {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized: Invalid API key")
+		return
+	}
+
 	var webhook struct {
 		Event string `json:"event"`
 		Data  struct {
