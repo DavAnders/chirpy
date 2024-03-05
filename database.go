@@ -116,6 +116,21 @@ func (db *DB) GetChirpByID(id int) (Chirp, error) {
 	return chirp, nil
 }
 
+func (db *DB) GetChirpsByAuthorID(authorID int) ([]Chirp, error) {
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+
+	var filteredChirps []Chirp
+	for _, chirp := range dbStruct.Chirps {
+		if chirp.AuthorID == authorID {
+			filteredChirps = append(filteredChirps, chirp)
+		}
+	}
+	return filteredChirps, nil
+}
+
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
 	// locking happens in call to writeDB, so it should not be needed here
