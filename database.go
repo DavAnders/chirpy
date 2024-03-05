@@ -191,3 +191,26 @@ func (db *DB) UpdateUser(id int, email, hashedPassword string) error {
 
 	return db.writeDB(dbStruct)
 }
+
+func (db *DB) DeleteChirp(chirpID int) error {
+	dbStruct, err := db.loadDB()
+	if err != nil {
+		return fmt.Errorf("loading database: %v", err)
+	}
+
+	// Check if the chirp exists
+	_, exists := dbStruct.Chirps[chirpID]
+	if !exists {
+		return fmt.Errorf("chirp not found")
+	}
+
+	// Delete the chirp from the map
+	delete(dbStruct.Chirps, chirpID)
+
+	// Write the updated database structure back to the file
+	if err := db.writeDB(dbStruct); err != nil {
+		return fmt.Errorf("writing database: %v", err)
+	}
+
+	return nil
+}

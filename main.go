@@ -67,6 +67,7 @@ func main() {
 	apiRouter.Put("/users", cfg.handleUpdateUsers)
 	apiRouter.Post("/refresh", cfg.handlerRefreshToken)
 	apiRouter.Post("/revoke", cfg.handlerRevokeToken)
+	apiRouter.Delete("/chirps/{chirpID}", cfg.handlerDeleteChirp)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)
