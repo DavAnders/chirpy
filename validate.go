@@ -47,24 +47,25 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	authorIDParam := r.URL.Query().Get("author_id")
+	sort := r.URL.Query().Get("sort")
+
+	// Default to ascending sort if not specified or if an invalid value is provided
+	if sort != "asc" && sort != "desc" {
+		sort = "asc"
+	}
+
+	var authorID int
+	var err error
 	if authorIDParam != "" {
-		authorID, err := strconv.Atoi(authorIDParam)
+		authorID, err = strconv.Atoi(authorIDParam)
 		if err != nil {
 			respondWithError(w, http.StatusBadRequest, "Invalid author ID")
 			return
 		}
-
-		chirps, err := cfg.database.GetChirpsByAuthorID(authorID)
-		if err != nil {
-			respondWithError(w, http.StatusInternalServerError, "Could not retrieve chirps for the given author")
-			return
-		}
-
-		respondWithJSON(w, http.StatusOK, chirps)
-		return
 	}
 
-	chirps, err := cfg.database.GetChirps()
+	// If authorIDParam is empty, pass a zero value for authorID.
+	chirps, err := cfg.database.GetChirpsFilteredAndSorted(authorID, sort)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not retrieve chirps")
 		return

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -116,19 +117,26 @@ func (db *DB) GetChirpByID(id int) (Chirp, error) {
 	return chirp, nil
 }
 
-func (db *DB) GetChirpsByAuthorID(authorID int) ([]Chirp, error) {
+func (db *DB) GetChirpsFilteredAndSorted(authorID int, sorting string) ([]Chirp, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
 		return nil, err
 	}
 
-	var filteredChirps []Chirp
+	var chirps []Chirp
 	for _, chirp := range dbStruct.Chirps {
-		if chirp.AuthorID == authorID {
-			filteredChirps = append(filteredChirps, chirp)
+		if authorID == 0 || chirp.AuthorID == authorID { // Filter by authorID if provided
+			chirps = append(chirps, chirp)
 		}
 	}
-	return filteredChirps, nil
+
+	// Sort chirps based on the sort parameter
+	if sorting == "desc" {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID > chirps[j].ID })
+	} else {
+		sort.Slice(chirps, func(i, j int) bool { return chirps[i].ID < chirps[j].ID })
+	}
+	return chirps, nil
 }
 
 // ensureDB creates a new database file if it doesn't exist

@@ -53,6 +53,10 @@ Many endpoints require authentication. This is achieved through a Bearer token p
   - Headers: `Authorization: Bearer <access_token>`
   - Deletes the chirp if the authenticated user is the author.
 
+  - **Sorting Chirps** 
+  - By default, chirps are sorted by their ID in ascending order (`asc`). You can modify the sorting order by adding a `sort` query parameter to the GET request, e.g., `/api/chirps?sort=desc` to sort chirps in descending order. Valid values for `sort` are `asc` for ascending order and `desc` for descending order.
+
+
 ### Token Management
 
 - **Refresh Token**
