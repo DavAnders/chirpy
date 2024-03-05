@@ -3,3 +3,4 @@ out
 test.rest
 database.json
 vendor
+revoked_test.go

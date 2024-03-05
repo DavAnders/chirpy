@@ -52,26 +52,40 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Prepare claims
-	claims := jwt.RegisteredClaims{
-		Issuer:    "chirpy",
+	accessClaims := jwt.RegisteredClaims{
+		Issuer:    "chirpy-access",
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
 		Subject:   strconv.Itoa(user.ID),
 	}
 
 	// Create token
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(cfg.jwtSecret))
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
+	tokenString, err := accessToken.SignedString([]byte(cfg.jwtSecret))
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Failed to sign the token")
+		respondWithError(w, http.StatusInternalServerError, "Failed to sign access token")
 		return
+	}
+
+	// refresh tokens
+	refreshTokenClaims := jwt.RegisteredClaims{
+		Issuer:    "chirpy-refresh",
+		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(60 * 24 * time.Hour)),
+		Subject:   strconv.Itoa(user.ID),
+	}
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshTokenClaims)
+	refreshTokenString, err := refreshToken.SignedString([]byte(cfg.jwtSecret))
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Failed to sign refresh token")
 	}
 
 	// Respond with token and user info
 	respondWithJSON(w, http.StatusOK, map[string]interface{}{
-		"id":    user.ID,
-		"email": user.Email,
-		"token": tokenString,
+		"id":            user.ID,
+		"email":         user.Email,
+		"token":         tokenString,
+		"refresh_token": refreshTokenString,
 	})
 
 }
@@ -133,9 +147,15 @@ func (cfg *apiConfig) handleUpdateUsers(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	if claims.Issuer != "chirpy-access" {
+		respondWithError(w, http.StatusUnauthorized, "Invalid token type")
+		return
+	}
+
 	userID, err := strconv.Atoi(claims.Subject)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Error parsing User ID")
+		return
 	}
 
 	var updateReq struct {

@@ -65,6 +65,8 @@ func main() {
 	apiRouter.Post("/users", cfg.handlerCreateUser)
 	apiRouter.Post("/login", cfg.handlerLogin)
 	apiRouter.Put("/users", cfg.handleUpdateUsers)
+	apiRouter.Post("/refresh", cfg.handlerRefreshToken)
+	apiRouter.Post("/revoke", cfg.handlerRevokeToken)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)

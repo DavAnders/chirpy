@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sync"
 
@@ -20,8 +21,9 @@ type DB struct {
 }
 
 type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users  map[int]User  `json:"users"`
+	Chirps      map[int]Chirp         `json:"chirps"`
+	Users       map[int]User          `json:"users"`
+	Revocations map[string]Revocation `json:"revocations"`
 }
 
 // NewDB creates a new database connection
@@ -115,21 +117,19 @@ func (db *DB) GetChirpByID(id int) (Chirp, error) {
 
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
-	db.Mux.Lock()
-	defer db.Mux.Unlock()
-	fmt.Println("ensure")
+	//db.Mux.Lock()
+	//defer db.Mux.Unlock()
+	log.Println("Ensuring database exists...")
 
-	if _, err := os.Stat(db.Path); err == nil {
-		return nil
-	} else if !os.IsNotExist(err) {
-		return err
+	if _, err := os.Stat(db.Path); os.IsNotExist(err) {
+		initialDB := DBStructure{
+			Chirps:      make(map[int]Chirp),
+			Users:       make(map[int]User),
+			Revocations: make(map[string]Revocation),
+		}
+		return db.writeDB(initialDB)
 	}
-
-	initialDB := DBStructure{
-		Chirps: make(map[int]Chirp),
-		Users:  make(map[int]User),
-	}
-	return db.writeDB(initialDB)
+	return nil
 }
 
 // loadDB reads the database file into memory
@@ -152,13 +152,21 @@ func (db *DB) loadDB() (DBStructure, error) {
 
 // writeDB writes the database file to disk
 func (db *DB) writeDB(dbStructure DBStructure) error {
-	fmt.Println("write")
+	db.Mux.Lock()
+	defer db.Mux.Unlock()
+	log.Println("Writing to database...")
 	bytes, err := json.Marshal(&dbStructure)
 	if err != nil {
+		log.Printf("Error marshalling database structure: %v\n", err)
 		return err
 	}
-	file := os.WriteFile(db.Path, bytes, 0644) // filemode = binary perms
-	return file
+	err = os.WriteFile(db.Path, bytes, 0644) // filemode = binary perms
+	if err != nil {
+		log.Printf("Error writing database file: %v\n", err)
+	} else {
+		log.Println("Database written successfully.")
+	}
+	return err
 }
 
 func (db *DB) UpdateUser(id int, email, hashedPassword string) error {
