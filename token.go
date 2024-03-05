@@ -2,10 +2,7 @@ package main
 
 import (
 	"net/http"
-	"strconv"
 	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
 type Revocation struct {
@@ -64,22 +61,6 @@ func (cfg *apiConfig) handlerRefreshToken(w http.ResponseWriter, r *http.Request
 	respondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"token": newAccessToken,
 	})
-}
-
-func generateNewAccessToken(userID int, secret string) (string, error) {
-	claims := &jwt.RegisteredClaims{
-		Issuer:    "chirpy-access",
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)), // 1 hour
-		Subject:   strconv.Itoa(userID),
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(secret))
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
 }
 
 func (db *DB) RevokeToken(tokenString string) error {

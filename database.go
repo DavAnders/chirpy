@@ -11,8 +11,9 @@ import (
 )
 
 type Chirp struct {
-	ID   int    `json:"id"`
-	Body string `json:"body"`
+	AuthorID int    `json:"author_id"`
+	Body     string `json:"body"`
+	ID       int    `json:"id"`
 }
 
 type DB struct {
@@ -69,7 +70,7 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 }
 
 // CreateChirp creates a new chirp and saves it to disk
-func (db *DB) CreateChirp(body string) (Chirp, error) {
+func (db *DB) CreateChirp(body string, userID int) (Chirp, error) {
 	dbStruct, err := db.loadDB()
 	if err != nil {
 		return Chirp{}, err
@@ -77,7 +78,7 @@ func (db *DB) CreateChirp(body string) (Chirp, error) {
 
 	// generate ID
 	newID := len(dbStruct.Chirps) + 1
-	newChirp := Chirp{ID: newID, Body: body}
+	newChirp := Chirp{ID: newID, Body: body, AuthorID: userID}
 	dbStruct.Chirps[newID] = newChirp
 
 	if err := db.writeDB(dbStruct); err != nil {

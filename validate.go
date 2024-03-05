@@ -11,13 +11,32 @@ import (
 )
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
-	var newChirp Chirp
+	tokenString, err := GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized: No token provided")
+		return
+	}
+
+	userIDstr, err := ValidateJWT(tokenString, cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Can't validate JWT")
+		return
+	}
+	userID, err := strconv.Atoi(userIDstr)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized: Invalid token")
+		return
+	}
+
+	var newChirp struct {
+		Body string `json:"body"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&newChirp); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	createdChirp, err := cfg.database.CreateChirp(newChirp.Body)
+	createdChirp, err := cfg.database.CreateChirp(newChirp.Body, userID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Could not create chirp")
 		return
@@ -40,7 +59,7 @@ func (cfg *apiConfig) handlerGetChirpsByID(w http.ResponseWriter, r *http.Reques
 	chirpIDString := chi.URLParam(r, "chirpID")
 	chirpID, err := strconv.Atoi(chirpIDString)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid chird ID")
+		respondWithError(w, http.StatusBadRequest, "Invalid chirp ID")
 		return
 	}
 
@@ -69,6 +88,26 @@ func cleanChirpContent(chirp string) string {
 }
 
 func (cfg *apiConfig) handlerChirpsValidate(w http.ResponseWriter, r *http.Request) {
+	// Extract JWT token from Authorization header
+	tokenString, tokenErr := GetBearerToken(r.Header)
+	if tokenErr != nil {
+		respondWithError(w, http.StatusUnauthorized, "Authorization token is required")
+		return
+	}
+
+	// Validate the JWT and extract user ID
+	userIDString, idErr := ValidateJWT(tokenString, cfg.jwtSecret)
+	if idErr != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid or expired token")
+		return
+	}
+
+	userID, userErr := strconv.Atoi(userIDString)
+	if userErr != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
 	type parameters struct {
 		Body string `json:"body"`
 	}
@@ -93,7 +132,7 @@ func (cfg *apiConfig) handlerChirpsValidate(w http.ResponseWriter, r *http.Reque
 
 	cleanedContent := cleanChirpContent(params.Body)
 
-	chirp, err := cfg.database.CreateChirp(cleanedContent)
+	chirp, err := cfg.database.CreateChirp(cleanedContent, userID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Failed to save chirp")
 		return
