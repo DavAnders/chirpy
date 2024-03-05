@@ -118,6 +118,8 @@ func (db *DB) GetChirpByID(id int) (Chirp, error) {
 
 // ensureDB creates a new database file if it doesn't exist
 func (db *DB) ensureDB() error {
+	// locking happens in call to writeDB, so it should not be needed here
+	// it looks like it doesn't deadlock, but might mess order of operations
 	//db.Mux.Lock()
 	//defer db.Mux.Unlock()
 	log.Println("Ensuring database exists...")

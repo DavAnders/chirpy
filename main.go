@@ -68,6 +68,7 @@ func main() {
 	apiRouter.Post("/refresh", cfg.handlerRefreshToken)
 	apiRouter.Post("/revoke", cfg.handlerRevokeToken)
 	apiRouter.Delete("/chirps/{chirpID}", cfg.handlerDeleteChirp)
+	apiRouter.Post("/polka/webhooks", cfg.handlePolkaWebhooks)
 
 	// mount before server config
 	r.Mount("/api", apiRouter)
